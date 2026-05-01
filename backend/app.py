@@ -144,33 +144,31 @@ def verify():
 
         if role == 'admin':
             v_res = verify_document(features)
-            
-            # --- NEW LOGIC: Store admin upload to MongoDB via Affinda ---
             try:
-                from core.digital_verifier import call_affinda_api
+                from core.digital_verifier import call_affinda_api, enrich_extracted_data
                 from pymongo import MongoClient
                 import uuid
-                
                 affinda_res = call_affinda_api(filepath)
                 if affinda_res.get("status") == "success":
                     data = affinda_res.get("data", {})
                     if data:
+                        data = enrich_extracted_data(data)
                         client = MongoClient("mongodb://localhost:27017/digitaldoc", serverSelectionTimeoutMS=2000)
                         db = client["digitaldoc"]
                         collection = db.trusted_documents
                         record = {
                             "document_id": data.get("document_id", str(uuid.uuid4())[:8]),
                             "name": data.get("name", "Unknown Admin Document"),
+                            "mothersName": data.get("mothersName", "N/A"),
+                            "percentage": data.get("percentage", "N/A"),
+                            "totalMarksWords": data.get("totalMarksWords", "N/A"),
                             "status": "Verified",
                             "source": "Admin Upload",
                             "raw_data": data
                         }
                         collection.insert_one(record)
-                        print("✅ Admin document data successfully seeded to MongoDB Trusted DB!")
             except Exception as e:
-                print(f"Failed to save admin document to MongoDB: {e}")
-            # -------------------------------------------------------------
-
+                print(f"Error: {e}")
             blockchain_record = {
                 "role": "admin",
                 "file": filename,

@@ -290,7 +290,6 @@ function Dashboard() {
 
   return (
     <div className="app-container">
-      {/* DigiLocker-style Header */}
       <nav className="top-nav">
         <div className="logo-section">
           <ShieldAlert size={32} color="var(--primary)" />
@@ -305,7 +304,6 @@ function Dashboard() {
         </div>
       </nav>
 
-      {/* Hero Banner - Only show on main dashboard view */}
       {userTab === null && adminTab === null && (
         <div className="hero-banner">
           <div className="hero-content">
@@ -427,7 +425,7 @@ function RootApp() {
   const { user } = useAuth();
   return (
     <Routes>
-      <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <HomePage />} />
+      <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/dashboard" element={
