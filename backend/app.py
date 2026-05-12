@@ -10,9 +10,14 @@ from core.preprocessor import preprocess_image
 from core.feature_extractor import get_extracted_features
 from core.verifier import verify_document
 from core.blockchain import Blockchain
+from core.db import db_manager
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {
+    "origins": "*",
+    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "allow_headers": ["Content-Type", "Authorization", "Accept"]
+}})
 
 blockchain = Blockchain()
 
@@ -177,6 +182,7 @@ def verify():
                 "sift_keypoints": features.get('sift_keypoints', 0),
                 "image_hash": features.get('image_hash', ""),
                 "spatial_hashes": features.get('spatial_hashes', []),
+                "doc_type_id": request.form.get('doc_type_id'),
                 "status": True
             }
             new_block = blockchain.add_block(blockchain_record)
@@ -201,10 +207,13 @@ def verify():
             best_tampered_quadrants = []
             best_tamper_boxes = []
             
+            best_doc_type_id = None
+            
             current_text = features.get('extracted_text', '')
             curr_sift = features.get('sift_keypoints', 0)
             curr_hash = features.get('image_hash', '')
             
+            # Match against Blockchain (existing logic)
             for block in blockchain.chain:
                 if isinstance(block.data, dict) and block.data.get('role') == 'admin':
                     admin_ipfs_hash = block.data.get('ipfs_hash')
@@ -395,7 +404,78 @@ def verify():
                         best_image_sim = image_sim
                         best_tampered_quadrants = tampered_quadrants
                         best_tamper_boxes = tamper_boxes
-            
+                        # Try to find which master document this corresponds to
+                        # If block data has a doc_type_id (new masters will), use it
+                        best_doc_type_id = block.data.get('doc_type_id')
+
+            # ── Also match against MongoDB Master Documents (Smart Linking uploads) ──
+            import re as _re
+            master_docs = db_manager.get_master_docs()
+            for m_doc in master_docs:
+                admin_filepath = m_doc.get('file_path')
+                if not os.path.exists(admin_filepath):
+                    continue
+
+                # --- Text similarity ---
+                admin_ipfs_hash = m_doc.get('ipfs_hash')
+                admin_text = mock_ipfs_download(admin_ipfs_hash) if admin_ipfs_hash else ""
+
+                clean_curr  = _re.sub(r'[^A-Za-z0-9]', '', current_text).lower()
+                clean_admin = _re.sub(r'[^A-Za-z0-9]', '', admin_text).lower()
+
+                if not clean_admin and not clean_curr:
+                    text_sim = 1.0
+                elif clean_admin and clean_curr:
+                    from difflib import SequenceMatcher as _SM
+                    sm = _SM(None, clean_curr, clean_admin)
+                    base_ratio = sm.ratio()
+                    matched_chars = sum(t.size for t in sm.get_matching_blocks())
+                    min_len = min(len(clean_admin), len(clean_curr))
+                    subset_ratio = matched_chars / min_len if min_len > 0 else 0
+                    text_sim = max(base_ratio, subset_ratio)
+                else:
+                    text_sim = 0.0
+
+                # --- SIFT similarity ---
+                sift_sim = 0.0
+                try:
+                    admin_img_gray = cv2.cvtColor(cv2.imread(admin_filepath), cv2.COLOR_BGR2GRAY)
+                    from core.feature_extractor import extract_sift_features as _esift
+                    _, admin_desc = _esift(admin_img_gray)
+                    uploaded_desc = np.array(features.get('sift_descriptors', []), dtype=np.float32)
+                    if admin_desc is not None and len(uploaded_desc) > 0:
+                        bf = cv2.BFMatcher()
+                        matches_m = bf.knnMatch(uploaded_desc, admin_desc, k=2)
+                        good_m = [m for m, n in matches_m if m.distance < 0.75 * n.distance]
+                        sift_sim = (2.0 * len(good_m)) / (len(uploaded_desc) + len(admin_desc) + 1e-7)
+                    else:
+                        sift_sim = text_sim
+                except Exception:
+                    sift_sim = text_sim
+
+                # --- Image hash similarity ---
+                admin_hash    = m_doc.get('image_hash', '')
+                curr_hash_val = features.get('image_hash', '')
+                image_sim_m   = 1.0
+                if admin_hash and curr_hash_val and len(admin_hash) == len(curr_hash_val):
+                    hamming   = sum(c1 != c2 for c1, c2 in zip(admin_hash, curr_hash_val))
+                    image_sim_m = 1.0 - (hamming / len(admin_hash))
+
+                # --- Combined score ---
+                if text_sim > 0.50:
+                    combined_score = text_sim if image_sim_m >= 0.998 else image_sim_m * 0.50
+                else:
+                    combined_score = (text_sim * 0.7) + (sift_sim * 0.3)
+
+                if combined_score > best_score:
+                    best_score        = combined_score
+                    best_text_sim     = text_sim
+                    best_sift_sim     = sift_sim
+                    best_image_sim    = image_sim_m
+                    best_tampered_quadrants = []
+                    best_tamper_boxes       = []
+                    best_doc_type_id  = m_doc.get('doc_type_id')  # ← key link to services
+
             is_verified = best_score >= 0.65
             
             tamper_analysis = None
@@ -438,6 +518,30 @@ def verify():
                 "ipfs_hash": ipfs_hash,
                 "tamper_analysis": tamper_analysis
             }
+
+            # If verified, get linked services
+            if is_verified and best_doc_type_id:
+                doc_type = db_manager.db.document_types.find_one({"id": best_doc_type_id}, {"_id": 0})
+                master_doc = db_manager.db.master_documents.find_one({"doc_type_id": best_doc_type_id}, {"_id": 0})
+                if doc_type and master_doc:
+                    service_ids = master_doc.get('linked_service_ids', [])
+                    all_services = db_manager.get_all_services()
+                    
+                    # Filter for linked services
+                    linked_services = [s for s in all_services if s['id'] in service_ids]
+                    
+                    # Check for user unlinks
+                    user_id = request.form.get('user_id')
+                    user_links = db_manager.get_user_links(user_id, best_doc_type_id) if user_id else None
+                    unlinked_ids = user_links.get('unlinked_service_ids', []) if user_links else []
+                    
+                    final_report["document_type"] = doc_type
+                    final_report["linked_services"] = [s for s in linked_services if s['id'] not in unlinked_ids]
+                    final_report["unlinked_services"] = [s for s in linked_services if s['id'] in unlinked_ids]
+            elif is_verified:
+                # If verified but no explicit doc_type_id, try to infer from OCR
+                # ... (omitted for now, relying on explicit linking) ...
+                pass
 
         final_img = processed_img['final']
         
@@ -574,6 +678,251 @@ def verify_digital():
             "status": "error",
             "message": f"INTERNAL ERROR: {str(e)}"
         }), 500
+
+# --- Smart Document Linking & Verification System Routes ---
+
+@app.route('/api/admin/document-types', methods=['GET', 'POST'])
+def manage_doc_types():
+    if request.method == 'POST':
+        data = request.json
+        name = data.get('name')
+        description = data.get('description', '')
+        if not name:
+            return jsonify({"error": "Name is required"}), 400
+        new_type = db_manager.add_doc_type(name, description)
+        return jsonify({"status": "success", "data": new_type})
+    
+    return jsonify({"status": "success", "data": db_manager.get_all_doc_types()})
+
+@app.route('/api/admin/services', methods=['GET', 'POST'])
+def manage_services():
+    if request.method == 'POST':
+        data = request.json
+        name = data.get('name')
+        if not name:
+            return jsonify({"error": "Name is required"}), 400
+        new_service = db_manager.add_service(name)
+        return jsonify({"status": "success", "data": new_service})
+    
+    return jsonify({"status": "success", "data": db_manager.get_all_services()})
+
+@app.route('/api/admin/master-documents', methods=['GET', 'POST'])
+def manage_master_docs():
+    if request.method == 'POST':
+        if 'document' not in request.files:
+            return jsonify({"error": "No document uploaded"}), 400
+        
+        file = request.files['document']
+        doc_type_id = request.form.get('doc_type_id')
+        linked_service_ids = json.loads(request.form.get('linked_service_ids', '[]'))
+        
+        if not doc_type_id:
+            return jsonify({"error": "Document type is required"}), 400
+
+        # Read file bytes ONCE — used for both hashing and saving
+        file_bytes = file.read()
+
+        # ── 1. SHA-256 hash of raw file bytes ──────────────────────────────
+        file_hash = db_manager.compute_file_hash(file_bytes)
+
+        # ── 2. Save to disk ────────────────────────────────────────────────
+        filename  = secure_filename(f"master_{doc_type_id}_{file.filename}")
+        filepath  = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        with open(filepath, 'wb') as f_out:
+            f_out.write(file_bytes)
+
+        # ── 3. Store in MongoDB with hash ──────────────────────────────────
+        new_master = db_manager.add_master_doc(doc_type_id, filepath, linked_service_ids, file_hash)
+
+        # ── 4. Also store in Blockchain for traceability ───────────────────
+        try:
+            blockchain_record = {
+                "role":         "admin",
+                "file":         filename,
+                "file_hash":    file_hash,       # SHA-256
+                "doc_type_id":  doc_type_id,
+                "linked_service_ids": linked_service_ids,
+                "status":       True
+            }
+            new_block = blockchain.add_block(blockchain_record)
+            new_master["blockchain_index"] = new_block.index
+            new_master["blockchain_hash"]  = new_block.hash
+        except Exception as e:
+            print(f"[Blockchain store error] {e}")
+
+        # ── 5. Background OCR features (non-blocking, best-effort) ─────────
+        try:
+            m_processed = preprocess_image(filepath, ["resizing", "grayscale"])
+            m_features  = get_extracted_features(m_processed, ["SIFT", "HOG"])
+            m_text      = m_features.get('extracted_text', '')
+            m_ipfs_hash = mock_ipfs_upload(m_text)
+            db_manager.update_master_features(
+                new_master["id"],
+                m_ipfs_hash,
+                m_features.get('sift_keypoints', 0),
+                m_features.get('image_hash', ''),
+                m_features.get('spatial_hashes', [])
+            )
+            new_master["ipfs_hash"] = m_ipfs_hash
+        except Exception as e:
+            print(f"[Master OCR extraction error] {e}")
+
+        return jsonify({"status": "success", "data": new_master})
+    
+    return jsonify({"status": "success", "data": db_manager.get_master_docs()})
+
+
+# ── Admin: Update master document linked services ─────────────────────────────
+@app.route('/api/admin/master-documents/<doc_id>', methods=['PUT', 'DELETE'])
+def manage_master_doc_item(doc_id):
+    if request.method == 'PUT':
+        data = request.get_json()
+        linked_service_ids = data.get('linked_service_ids', [])
+        result = db_manager.master_docs.update_one(
+            {"id": doc_id},
+            {"$set": {"linked_service_ids": linked_service_ids}}
+        )
+        if result.matched_count == 0:
+            return jsonify({"error": "Document not found"}), 404
+        updated = db_manager.master_docs.find_one({"id": doc_id}, {"_id": 0})
+        return jsonify({"status": "success", "data": updated})
+
+    if request.method == 'DELETE':
+        doc = db_manager.master_docs.find_one({"id": doc_id})
+        if not doc:
+            return jsonify({"error": "Document not found"}), 404
+        # Remove file from disk
+        try:
+            if os.path.exists(doc.get("file_path", "")):
+                os.remove(doc["file_path"])
+        except Exception as e:
+            print(f"[File delete error] {e}")
+        db_manager.master_docs.delete_one({"id": doc_id})
+        return jsonify({"status": "success", "message": "Deleted"})
+
+
+# ── Admin: Get user unlink stats for a master document ───────────────────────
+@app.route('/api/admin/master-documents/<doc_id>/unlink-stats', methods=['GET'])
+def get_unlink_stats(doc_id):
+    doc = db_manager.master_docs.find_one({"id": doc_id}, {"_id": 0})
+    if not doc:
+        return jsonify({"error": "Document not found"}), 404
+    # Find all user_links records for this doc_type_id
+    links = list(db_manager.user_links.find(
+        {"doc_type_id": doc["doc_type_id"]},
+        {"_id": 0, "user_id": 1, "unlinked_service_ids": 1}
+    ))
+    # Build a per-service unlink count
+    service_unlink_counts = {}
+    for link in links:
+        for sid in link.get("unlinked_service_ids", []):
+            service_unlink_counts[sid] = service_unlink_counts.get(sid, 0) + 1
+    return jsonify({
+        "status": "success",
+        "data": {
+            "total_users_with_unlinks": len(links),
+            "service_unlink_counts": service_unlink_counts
+        }
+    })
+
+
+# ── Hash-based instant verification (no ML required) ──────────────────────────
+@app.route('/api/user/verify-by-hash', methods=['POST'])
+def verify_by_hash():
+    """User uploads a file → compute SHA-256 → O(1) MongoDB lookup → return linked services."""
+    if 'document' not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    file    = request.files['document']
+    user_id = request.form.get('user_id')
+
+    # Compute hash
+    file_bytes = file.read()
+    file_hash  = db_manager.compute_file_hash(file_bytes)
+
+    # Lookup in MongoDB
+    master = db_manager.find_master_by_hash(file_hash)
+
+    if not master:
+        return jsonify({
+            "status": "success",
+            "found":  False,
+            "hash":   file_hash,
+            "message": "Document not recognised — hash not found in any registered master document."
+        })
+
+    # Fetch document type
+    doc_type = db_manager.doc_types.find_one({"id": master["doc_type_id"]}, {"_id": 0})
+
+    # Fetch all linked services
+    service_ids  = master.get('linked_service_ids', [])
+    all_services = db_manager.get_all_services()
+    linked_all   = [s for s in all_services if s['id'] in service_ids]
+
+    # Apply user-specific unlinks
+    user_links   = db_manager.get_user_links(user_id, master["doc_type_id"]) if user_id else None
+    unlinked_ids = user_links.get('unlinked_service_ids', []) if user_links else []
+
+    # Get blockchain proof for this document
+    bc_proof = None
+    for block in blockchain.chain:
+        if isinstance(block.data, dict) and block.data.get('file_hash') == file_hash:
+            bc_proof = {
+                "block_index": block.index,
+                "block_hash":  block.hash,
+                "timestamp":   block.timestamp
+            }
+            break
+
+    return jsonify({
+        "status":           "success",
+        "found":            True,
+        "hash":             file_hash,
+        "document_type":    doc_type,
+        "linked_services":  [s for s in linked_all if s['id'] not in unlinked_ids],
+        "unlinked_services":[s for s in linked_all if s['id'] in unlinked_ids],
+        "blockchain_proof": bc_proof
+    })
+
+
+@app.route('/api/user/unlink-service', methods=['POST'])
+def unlink_service():
+    data = request.json
+    user_id = data.get('user_id')
+    doc_type_id = data.get('doc_type_id')
+    service_id = data.get('service_id')
+    
+    if not user_id or not doc_type_id or not service_id:
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    updated_link = db_manager.update_user_link(user_id, doc_type_id, service_id, 'unlink')
+    db_manager.log_activity(user_id, "unlink", {"doc_type_id": doc_type_id, "service_id": service_id})
+    
+    return jsonify({"status": "success", "data": updated_link})
+
+@app.route('/api/user/activity-logs/<user_id>', methods=['GET'])
+def get_activity_logs(user_id):
+    logs = list(db_manager.activity_logs.find({"user_id": user_id}, {'_id': 0}).sort("timestamp", -1))
+    return jsonify({"status": "success", "data": logs})
+
+# Seed initial services if empty
+def seed_data():
+    if not db_manager.get_all_services():
+        services = ["SBI Bank", "BOI Bank", "KDC Bank", "HDFC Bank", "ICICI Bank", "Axis Bank"]
+        for s in services:
+            db_manager.add_service(s)
+    
+    if not db_manager.get_all_doc_types():
+        types = [
+            {"name": "Aadhaar Card", "desc": "Official identification document for Indian citizens."},
+            {"name": "PAN Card", "desc": "Permanent Account Number for tax purposes."},
+            {"name": "Income Certificate", "desc": "Document certifying annual income."},
+            {"name": "Resume", "desc": "Professional CV for job applications."}
+        ]
+        for t in types:
+            db_manager.add_doc_type(t['name'], t['desc'])
+
+seed_data()
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

@@ -49,7 +49,7 @@ const RegisterPage = () => {
 
                 {success ? (
                     <div className="auth-success-msg" style={{textAlign: 'center', padding: '1rem'}}>
-                        <CheckCircle size={48} color="#10b981" style={{marginBottom: '1rem'}} />
+                        <CheckCircle size={48} color="var(--primary)" style={{marginBottom: '1rem'}} />
                         <h2 style={{marginBottom: '0.5rem'}}>Registration Successful!</h2>
                         <p style={{color: 'var(--text-muted)'}}>Redirecting you to login...</p>
                     </div>

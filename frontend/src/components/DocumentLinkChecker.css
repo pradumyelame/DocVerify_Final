@@ -1,0 +1,655 @@
+/* DocumentLinkChecker.css */
+
+/* ─── CONTAINER ─────────────────────────────────────────────── */
+.dlc-container {
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+/* ─── UPLOAD ZONE ────────────────────────────────────────────── */
+.dlc-upload-zone {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    border: 2px dashed rgba(37, 99, 235, 0.3);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: var(--glass-blur);
+    transition: all 0.4s ease;
+    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.05);
+    overflow: hidden;
+}
+
+.dlc-upload-zone::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.05) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.dlc-upload-zone:hover {
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.9);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(37, 99, 235, 0.1);
+}
+
+.dlc-upload-zone:hover::before {
+    opacity: 1;
+}
+
+.dlc-upload-zone.dragging {
+    border-color: var(--accent);
+    background: rgba(139, 92, 246, 0.05);
+    transform: scale(1.02);
+}
+
+.dlc-upload-zone input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+}
+
+.dlc-upload-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 3rem 2rem;
+    cursor: pointer;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+}
+
+.dlc-upload-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(37, 99, 235, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+    transition: transform 0.3s ease;
+    box-shadow: 0 5px 15px rgba(37, 99, 235, 0.1);
+}
+
+.dlc-upload-zone:hover .dlc-upload-icon {
+    transform: scale(1.1);
+}
+
+.dlc-upload-label h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.dlc-upload-label p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.dlc-browse-link {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+.dlc-file-types {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.8);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* ─── HASH PROOF CARD ────────────────────────────────────────── */
+.dlc-hash-card {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,1);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.05);
+}
+
+.dlc-hash-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.dlc-hash-row.blockchain {
+    border-top: 1px solid rgba(0,0,0,0.05);
+    padding-top: 0.6rem;
+}
+
+.dlc-hash-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary);
+    white-space: nowrap;
+    min-width: 120px;
+    padding-top: 2px;
+}
+
+.dlc-hash-value {
+    font-family: 'Inter', monospace;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    word-break: break-all;
+    background: rgba(248, 250, 252, 0.8);
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    flex: 1;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.dlc-hash-value.small {
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+}
+
+/* ─── PROCESSING ─────────────────────────────────────────────── */
+.dlc-processing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 3rem 2rem;
+    text-align: center;
+    width: 100%;
+    max-width: 480px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: var(--glass-blur);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255,255,255,0.9);
+    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.05);
+}
+
+.dlc-scan-ring {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dlc-scan-pulse {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3px solid var(--primary);
+    animation: dlc-pulse 1.5s ease-in-out infinite;
+    box-shadow: 0 0 15px rgba(37, 99, 235, 0.2);
+}
+
+@keyframes dlc-pulse {
+    0%   { transform: scale(0.85); opacity: 0.9; }
+    50%  { transform: scale(1.1);  opacity: 0.2; }
+    100% { transform: scale(0.85); opacity: 0.9; }
+}
+
+.dlc-file-icon {
+    color: var(--primary);
+    filter: drop-shadow(0 4px 10px rgba(37, 99, 235, 0.2));
+}
+
+.dlc-processing h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    color: var(--text-main);
+    font-weight: 800;
+}
+
+.dlc-processing-file {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--primary);
+    font-family: 'Inter', monospace;
+    background: rgba(248, 250, 252, 0.8);
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.dlc-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    text-align: left;
+    width: 100%;
+    max-width: 320px;
+}
+
+.dlc-step {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.dlc-step svg {
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+/* ─── RESULT PANEL ───────────────────────────────────────────── */
+.dlc-result {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    width: 100%;
+    max-width: 700px;
+}
+
+.dlc-result-banner {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.5rem 2rem;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 1);
+    border-left: 4px solid var(--primary);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.05);
+}
+
+.dlc-banner-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(248, 250, 252, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.1);
+}
+
+.dlc-banner-title {
+    margin: 0 0 0.25rem;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.dlc-banner-sub {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* ─── SECTIONS ───────────────────────────────────────────────── */
+.dlc-section {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid rgba(255,255,255,0.9);
+    border-radius: 14px;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.05);
+}
+
+.dlc-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--text-main);
+    margin-bottom: 1.5rem;
+}
+
+.dlc-section-header.unlinked {
+    color: #dc2626;
+}
+
+/* ─── SERVICE CARDS ──────────────────────────────────────────── */
+.dlc-services-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.dlc-service-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.2rem 1.5rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(241, 245, 249, 1);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.dlc-service-card.linked:hover {
+    border-color: rgba(37, 99, 235, 0.3);
+    background: #ffffff;
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px rgba(37, 99, 235, 0.08);
+}
+
+.dlc-service-card.unlinked {
+    opacity: 0.7;
+    background: rgba(254, 242, 242, 0.5);
+    border-color: rgba(254, 226, 226, 1);
+}
+
+.dlc-service-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.dlc-service-icon {
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+.dlc-service-icon.muted {
+    color: #dc2626;
+}
+
+.dlc-service-info strong {
+    display: block;
+    font-size: 1.05rem;
+    color: var(--text-main);
+    font-weight: 700;
+}
+
+.dlc-service-status {
+    font-size: 0.85rem;
+    color: var(--primary);
+    display: block;
+    margin-top: 4px;
+}
+
+.dlc-service-status.unlinked {
+    color: #dc2626;
+}
+
+.dlc-unlink-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.2rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    background: rgba(254, 242, 242, 1);
+    border: 1px solid rgba(254, 226, 226, 1);
+    color: #dc2626;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.dlc-unlink-btn:hover:not(:disabled) {
+    background: #fee2e2;
+    border-color: #f87171;
+}
+
+.dlc-unlink-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.dlc-empty {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    padding: 0.5rem;
+}
+
+/* ─── ACTIVITY LOG ───────────────────────────────────────────── */
+.dlc-history {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.dlc-history-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255,255,255,0.8);
+    border: 1px solid rgba(226, 232, 240, 1);
+    color: var(--text-muted);
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    align-self: flex-start;
+}
+
+.dlc-history-btn:hover {
+    color: var(--primary);
+    border-color: rgba(37, 99, 235, 0.3);
+    background: #ffffff;
+}
+
+.dlc-logs {
+    background: rgba(248, 250, 252, 0.8);
+    border: 1px solid rgba(226, 232, 240, 1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.dlc-log-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.9rem;
+}
+
+.dlc-log-badge {
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.dlc-log-badge.unlink {
+    background: rgba(254, 242, 242, 1);
+    color: #dc2626;
+    border: 1px solid rgba(254, 226, 226, 1);
+}
+
+.dlc-log-badge.link {
+    background: rgba(239, 246, 255, 1);
+    color: var(--primary);
+    border: 1px solid rgba(219, 234, 254, 1);
+}
+
+.dlc-log-detail {
+    color: var(--text-muted);
+}
+
+.dlc-logs-empty {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* ─── NOT FOUND ──────────────────────────────────────────────── */
+.dlc-notfound {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    text-align: center;
+    padding: 4rem 2rem;
+    max-width: 500px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: var(--glass-blur);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255,255,255,0.9);
+    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.05);
+}
+
+.dlc-notfound-icon {
+    color: #dc2626;
+    filter: drop-shadow(0 4px 10px rgba(220, 38, 38, 0.2));
+}
+
+.dlc-notfound h3 {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.dlc-notfound p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.dlc-notfound-tips {
+    text-align: left;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.8;
+    background: rgba(248, 250, 252, 0.8);
+    border: 1px solid rgba(226, 232, 240, 1);
+    border-radius: 10px;
+    padding: 1.5rem;
+    width: 100%;
+}
+
+/* ─── MODAL ──────────────────────────────────────────────────── */
+.dlc-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.dlc-modal {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,1);
+    border-radius: 20px;
+    padding: 3rem;
+    max-width: 450px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2rem;
+    text-align: center;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.1);
+}
+
+.dlc-modal h4 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.dlc-modal p {
+    margin: 0;
+    color: var(--text-muted);
+    line-height: 1.6;
+    font-size: 1.05rem;
+}
+
+.dlc-modal-sub {
+    font-size: 0.85rem !important;
+    color: var(--text-dim) !important;
+}
+
+.dlc-modal-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    width: 100%;
+}
+
+.dlc-modal-actions button {
+    flex: 1;
+}
+
+.dlc-btn-danger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: #dc2626 !important;
+    border-color: #dc2626 !important;
+    color: white !important;
+    font-weight: 600;
+}
+
+.dlc-btn-danger:hover {
+    background: #b91c1c !important;
+    box-shadow: 0 5px 15px rgba(220, 38, 38, 0.2);
+}
+
+/* ─── RESET BUTTON ───────────────────────────────────────────── */
+.dlc-reset-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(226, 232, 240, 1);
+    color: var(--text-muted);
+    padding: 0.8rem 2rem;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    align-self: center;
+}
+
+.dlc-reset-btn:hover {
+    color: var(--primary);
+    border-color: rgba(37, 99, 235, 0.3);
+    background: #ffffff;
+    box-shadow: 0 5px 15px rgba(37, 99, 235, 0.08);
+}

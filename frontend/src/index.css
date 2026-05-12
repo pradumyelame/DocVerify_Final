@@ -3,29 +3,32 @@
   --bg-main: #f8fafc;
   --bg-card: #ffffff;
   --bg-card-hover: #f1f5f9;
-  
-  --primary: #1e3a8a; /* Deep DigiLocker Blue */
+
+  --primary: #1e3a8a;
+  /* Deep DigiLocker Blue */
   --primary-hover: #1e40af;
   --primary-glow: rgba(30, 58, 138, 0.2);
-  
-  --secondary: #3b82f6; /* Lighter blue accent */
+
+  --secondary: #3b82f6;
+  /* Lighter blue accent */
   --secondary-hover: #2563eb;
-  
-  --accent: #10b981;
+
+  --accent: #3b82f6;
   --danger: #ef4444;
   --warning: #f59e0b;
-  
+
   --text-main: #0f172a;
   --text-muted: #475569;
   --text-dim: #94a3b8;
-  
+
   --border-glass: #e2e8f0;
   --border-active: rgba(30, 58, 138, 0.3);
-  
-  --glass-blur: blur(0px); /* Solid instead of blur */
+
+  --glass-blur: blur(0px);
+  /* Solid instead of blur */
   --radius-lg: 12px;
   --radius-md: 8px;
-  
+
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
@@ -45,7 +48,9 @@ body {
   min-height: 100vh;
 }
 
-#root { min-height: 100vh; }
+#root {
+  min-height: 100vh;
+}
 
 .app-container {
   min-height: 100vh;
@@ -158,7 +163,9 @@ body {
   user-select: none;
 }
 
-.btn:active { transform: scale(0.98); }
+.btn:active {
+  transform: scale(0.98);
+}
 
 .btn-primary {
   background: var(--primary);
@@ -229,8 +236,15 @@ body {
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .card-grid {
@@ -250,7 +264,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .action-card:hover {

@@ -16,8 +16,8 @@ const HomePage = () => {
           <span className="logo-text">DocVerify</span>
         </div>
         <div className="home-nav-links">
-          <button className="nav-link-btn" onClick={() => document.getElementById('features')?.scrollIntoView({behavior: 'smooth'})}>Explore DocVerify</button>
-          <button className="nav-link-btn" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({behavior: 'smooth'})}>How It Works</button>
+          <button className="nav-link-btn" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>Explore DocVerify</button>
+          <button className="nav-link-btn" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}>How It Works</button>
           {user ? (
             <button className="btn btn-primary" onClick={() => navigate('/dashboard')} style={{ padding: '0.5rem 1.8rem', borderRadius: '25px' }}>
               Go to Dashboard
@@ -37,7 +37,7 @@ const HomePage = () => {
             <span style={{ color: 'var(--primary)' }}>Verification System</span>
           </h1>
           <p className="home-hero-subtitle">
-            Verify your digital and physical documents instantly with advanced 
+            Verify your digital and physical documents instantly with advanced
             authenticity checks powered by blockchain technology and trusted databases.
           </p>
           <div className="home-hero-btns">
@@ -78,7 +78,7 @@ const HomePage = () => {
           </div>
 
           <div className="home-feature-card">
-            <div className="home-feature-icon" style={{ background: 'rgba(16, 185, 129, 0.1)' }}>
+            <div className="home-feature-icon" style={{ background: 'rgba(59, 130, 246, 0.1)' }}>
               <Fingerprint size={32} color="var(--accent)" />
             </div>
             <h3>Digital Fingerprinting</h3>

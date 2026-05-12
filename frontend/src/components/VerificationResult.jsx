@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { RotateCcw, Eye, ShieldCheck, Database, Loader2, AlertTriangle, Cpu, FileWarning, Activity } from 'lucide-react';
+import { RotateCcw, Eye, ShieldCheck, Database, Loader2, AlertTriangle, Cpu, FileWarning, Activity, Building2 } from 'lucide-react';
 import './VerificationResult.css';
+import LinkedServices from './LinkedServices';
+import { useAuth } from '../context/AuthContext';
 
 const VerificationResult = ({ result, role, onReset }) => {
   const [showImage, setShowImage] = useState(!result.verified && role === 'user');
   const [ipfsText, setIpfsText] = useState(null);
   const [fetchingIpfs, setFetchingIpfs] = useState(false);
+  const { user } = useAuth();
 
   const fetchIpfsText = async () => {
     if (ipfsText || !result.ipfs_hash) return;
@@ -152,6 +155,14 @@ const VerificationResult = ({ result, role, onReset }) => {
             </div>
           )}
         </div>
+      )}
+
+      {role === 'user' && result.verified && result.linked_services && (
+        <LinkedServices 
+          result={result} 
+          userId={user?.id} 
+          onAction={onReset} 
+        />
       )}
 
       <button className="btn btn-secondary reset-btn" style={{ marginTop: '2rem' }} onClick={onReset}>

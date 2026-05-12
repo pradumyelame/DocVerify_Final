@@ -30,7 +30,7 @@ const DigitalVerificationResult = ({ result, onReset }) => {
       </div>
 
       {fieldAnalysis && Object.keys(fieldAnalysis).length > 0 && (
-        <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '12px', border: result.decision === 'DOCUMENT IS OKAY' ? '1px solid var(--accent)' : '1px solid var(--danger)', marginTop: '1.5rem', background: result.decision === 'DOCUMENT IS OKAY' ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)' }}>
+        <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '12px', border: result.decision === 'DOCUMENT IS OKAY' ? '1px solid var(--accent)' : '1px solid var(--danger)', marginTop: '1.5rem', background: result.decision === 'DOCUMENT IS OKAY' ? 'rgba(59, 130, 246, 0.05)' : 'rgba(239, 68, 68, 0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
             <ShieldCheck size={20} color={result.decision === 'DOCUMENT IS OKAY' ? 'var(--accent)' : 'var(--danger)'} />
             <h4 style={{ margin: 0, color: result.decision === 'DOCUMENT IS OKAY' ? 'var(--accent)' : 'var(--danger)' }}>Mandatory Field Matching (Name, Roll, Marks, etc.)</h4>
@@ -41,8 +41,8 @@ const DigitalVerificationResult = ({ result, onReset }) => {
                 marginBottom: '0.75rem', 
                 padding: '0.75rem', 
                 borderRadius: '8px', 
-                background: data?.status === 'Verified' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
-                border: `1px solid ${data?.status === 'Verified' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}` 
+                background: data?.status === 'Verified' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
+                border: `1px solid ${data?.status === 'Verified' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(239, 68, 68, 0.3)'}` 
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 600, textTransform: 'capitalize', color: 'var(--text-main)' }}>{field.replace(/_/g, ' ')}</span>
@@ -98,12 +98,12 @@ const DigitalVerificationResult = ({ result, onReset }) => {
       </div>
 
 
-      <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--accent)', marginTop: '1.5rem', background: 'rgba(16, 185, 129, 0.05)' }}>
+      <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--accent)', marginTop: '1.5rem', background: 'rgba(59, 130, 246, 0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
             <Fingerprint size={20} color="var(--accent)" />
             <h4 style={{ margin: 0, color: 'var(--accent)' }}>Document Fingerprint</h4>
           </div>
-          <code style={{ display: 'block', background: 'rgba(16, 185, 129, 0.1)', padding: '0.75rem', borderRadius: '8px', wordBreak: 'break-all', color: 'var(--text-main)', fontSize: '0.9rem' }}>
+          <code style={{ display: 'block', background: 'rgba(59, 130, 246, 0.1)', padding: '0.75rem', borderRadius: '8px', wordBreak: 'break-all', color: 'var(--text-main)', fontSize: '0.9rem' }}>
             {result.fingerprint || 'N/A'}
           </code>
       </div>

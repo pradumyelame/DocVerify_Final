@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Loader2, CheckCircle2 } from 'lucide-react';
+import { Shield, Loader2, CheckCircle2, Link as LinkIcon } from 'lucide-react';
 import './App.css';
 import UploadZone from './components/UploadZone';
 import VerificationResult from './components/VerificationResult';
@@ -87,6 +87,7 @@ const VerificationFlow = ({ role }) => {
   const [result, setResult] = useState(null);
   const [selectedTechniques, setSelectedTechniques] = useState([]);
   const [featureTechniques, setFeatureTechniques] = useState(['CNN', 'SIFT', 'HOG', 'LBP', 'ORB']);
+  const { user } = useAuth();
 
   const performVerification = async (formData) => {
     try {
@@ -114,16 +115,16 @@ const VerificationFlow = ({ role }) => {
       setStep(STEPS.LOADING);
       const defaultTechniques = ["resizing", "grayscale"];
       const defaultFeatureTechniques = ['CNN', 'SIFT', 'HOG', 'LBP', 'ORB'];
-      
+
       setSelectedTechniques(defaultTechniques);
       setFeatureTechniques(defaultFeatureTechniques);
-      
+
       const formData = new FormData();
       formData.append('document', uploadedFile);
       formData.append('techniques', JSON.stringify(defaultTechniques));
       formData.append('feature_techniques', JSON.stringify(defaultFeatureTechniques));
       formData.append('role', role);
-      
+
       performVerification(formData);
     } else {
       setStep(STEPS.PREPROCESSING);
@@ -138,12 +139,13 @@ const VerificationFlow = ({ role }) => {
   const handleFeatureSelect = async (techniques) => {
     setFeatureTechniques(techniques);
     setStep(STEPS.LOADING);
-    
+
     const formData = new FormData();
     formData.append('document', file);
     formData.append('techniques', JSON.stringify(selectedTechniques));
     formData.append('feature_techniques', JSON.stringify(techniques));
     formData.append('role', role);
+    if (user && user.id) formData.append('user_id', user.id);
 
     await performVerification(formData);
   };
@@ -165,8 +167,8 @@ const VerificationFlow = ({ role }) => {
         )}
 
         {step === STEPS.PREPROCESSING && (
-          <PreprocessingOptions 
-            onNext={handlePreprocessingSelect} 
+          <PreprocessingOptions
+            onNext={handlePreprocessingSelect}
             onBack={() => setStep(STEPS.UPLOAD)}
           />
         )}
@@ -208,6 +210,8 @@ import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
 import { useAuth } from './context/AuthContext';
 import DigitalVerificationResult from './components/DigitalVerificationResult';
+import AdminManagement from './components/AdminManagement';
+import DocumentLinkChecker from './components/DocumentLinkChecker';
 
 const DigitalVerificationFlow = ({ role }) => {
   const [step, setStep] = useState(STEPS.UPLOAD);
@@ -217,10 +221,10 @@ const DigitalVerificationFlow = ({ role }) => {
   const handleUpload = async (uploadedFile) => {
     setFile(uploadedFile);
     setStep(STEPS.LOADING);
-    
+
     const formData = new FormData();
     formData.append('document', uploadedFile);
-    
+
     try {
       const response = await fetch('http://localhost:5000/api/verify_digital', {
         method: 'POST',
@@ -311,11 +315,11 @@ function Dashboard() {
               {user.role === 'admin' ? "Admin Verification Portal" : "Secure Document Verification System"}
             </h1>
             <p className="hero-subtitle">
-              {user.role === 'admin' 
-                ? "Upload and register official ground-truth documents to the secure blockchain ledger." 
+              {user.role === 'admin'
+                ? "Upload and register official ground-truth documents to the secure blockchain ledger."
                 : "Verify your digital and physical documents instantly with our advanced multi-layer authenticity checks."}
             </p>
-            <button className="btn btn-primary" onClick={() => window.scrollTo({top: 500, behavior: 'smooth'})}>
+            <button className="btn btn-primary" onClick={() => window.scrollTo({ top: 500, behavior: 'smooth' })}>
               Get Started
             </button>
           </div>
@@ -331,34 +335,46 @@ function Dashboard() {
           <div className="user-container">
             {userTab === null ? (
               <div className="fade-in-up card-grid" style={{ marginBottom: '2rem' }}>
-                <div 
+                <div
                   className="action-card"
                   onClick={() => setUserTab('STANDARD')}
                   style={{ border: '1px solid var(--border-glass)' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--primary)' }}>
-                      <FileSearch size={28} />
-                      <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Standard Visual Verification</h3>
+                    <FileSearch size={28} />
+                    <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Standard Visual Verification</h3>
                   </div>
                   <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.9rem' }}>Upload documents to check for visual tampering, pixel anomalies, and missing elements against physical prints.</p>
                 </div>
-                
-                <div 
+
+                <div
                   className="action-card"
                   onClick={() => setUserTab('DIGITAL')}
                   style={{ border: '1px solid var(--border-glass)' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--primary)' }}>
-                      <Fingerprint size={28} />
-                      <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Advanced Digital Verification</h3>
+                    <Fingerprint size={28} />
+                    <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Advanced Digital Verification</h3>
                   </div>
                   <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.9rem' }}>Validate document metadata, extract structured data, and match against the Trusted Database instantly.</p>
+                </div>
+
+                <div
+                  className="action-card"
+                  onClick={() => setUserTab('CHECK_LINKS')}
+                  style={{ border: '1px solid var(--border-glass)' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--primary)' }}>
+                    <LinkIcon size={28} />
+                    <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Check Document Links</h3>
+                  </div>
+                  <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.9rem' }}>Upload your document to instantly see which banks & services it's currently linked to.</p>
                 </div>
               </div>
             ) : (
               <div className="fade-in-up">
-                <button 
-                  className="btn btn-ghost" 
+                <button
+                  className="btn btn-ghost"
                   onClick={() => setUserTab(null)}
                   style={{ marginBottom: '1rem', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                 >
@@ -367,6 +383,7 @@ function Dashboard() {
                 <div className="glass-panel" style={{ padding: '2rem' }}>
                   {userTab === 'STANDARD' && <VerificationFlow role="user" />}
                   {userTab === 'DIGITAL' && <DigitalVerificationFlow role="user" />}
+                  {userTab === 'CHECK_LINKS' && <DocumentLinkChecker />}
                 </div>
               </div>
             )}
@@ -375,34 +392,46 @@ function Dashboard() {
           <div className="admin-container" style={{ padding: 0, width: '100%', alignItems: 'stretch' }}>
             {adminTab === null ? (
               <div className="fade-in-up card-grid" style={{ marginBottom: '2rem' }}>
-                <div 
+                <div
                   className="action-card"
                   onClick={() => setAdminTab('VERIFY')}
                   style={{ border: '1px solid var(--border-glass)' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--primary)' }}>
-                      <FileSearch size={28} />
-                      <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Upload & Register Document</h3>
+                    <FileSearch size={28} />
+                    <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Upload & Register Document</h3>
                   </div>
                   <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.9rem' }}>Register an official ground-truth document to the Blockchain and Trusted Database.</p>
                 </div>
 
-                <div 
+                <div
                   className="action-card"
                   onClick={() => setAdminTab('BLOCKCHAIN')}
                   style={{ border: '1px solid var(--border-glass)' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--primary)' }}>
-                      <Database size={28} />
-                      <h3 style={{ margin: 0, fontSize: '1.2rem' }}>View Blockchain Ledger</h3>
+                    <Database size={28} />
+                    <h3 style={{ margin: 0, fontSize: '1.2rem' }}>View Blockchain Ledger</h3>
                   </div>
                   <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.9rem' }}>Audit the decentralized ledger to view all registered and verified document hashes securely.</p>
+                </div>
+
+                <div
+                  className="action-card"
+                  onClick={() => setAdminTab('MANAGEMENT')}
+                  style={{ border: '1px solid var(--border-glass)' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--primary)' }}>
+                    <Database size={28} />
+                    <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Smart Document Linking</h3>
+                  </div>
+                  <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.9rem' }}>Manage document types, banks, services, and dynamic document-service relationships.</p>
                 </div>
               </div>
             ) : (
               <div className="fade-in-up" style={{ width: '100%' }}>
-                <button 
-                  className="btn btn-ghost" 
+                <button
+                  className="btn btn-ghost"
                   onClick={() => setAdminTab(null)}
                   style={{ marginBottom: '1.5rem', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                 >
@@ -411,6 +440,7 @@ function Dashboard() {
                 <div className="glass-panel" style={{ padding: '2.5rem', width: '100%', minHeight: '60vh' }}>
                   {adminTab === 'VERIFY' && <VerificationFlow role="admin" />}
                   {adminTab === 'BLOCKCHAIN' && <BlockchainViewer />}
+                  {adminTab === 'MANAGEMENT' && <AdminManagement />}
                 </div>
               </div>
             )}
